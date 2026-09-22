@@ -5,6 +5,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[derive(Debug)]
 struct Options {
     path: PathBuf,
@@ -14,7 +16,8 @@ struct Options {
 
 fn main() {
     let options = match parse_args() {
-        Ok(options) => options,
+        Ok(Some(options)) => options,
+        Ok(None) => return,
         Err(message) => {
             if !message.is_empty() {
                 eprintln!("{message}");
@@ -30,7 +33,7 @@ fn main() {
     }
 }
 
-fn parse_args() -> Result<Options, String> {
+fn parse_args() -> Result<Option<Options>, String> {
     let mut path = None;
     let mut show_files = false;
     let mut ascii = false;
@@ -41,9 +44,14 @@ fn parse_args() -> Result<Options, String> {
             "/A" => ascii = true,
             "/?" | "-H" | "--HELP" => {
                 println!("Usage: treex [drive:][path] [/F] [/A]");
-                println!("  /F  Display files as well as directories.");
-                println!("  /A  Use ASCII characters instead of line-drawing characters.");
-                return Err(String::new());
+                println!("  /F       Display files as well as directories.");
+                println!("  /A       Use ASCII characters instead of line-drawing characters.");
+                println!("  /ABOUT   Display program information.");
+                return Ok(None);
+            }
+            "/ABOUT" | "--ABOUT" => {
+                print_about();
+                return Ok(None);
             }
             _ if arg.starts_with('/') => return Err(format!("Unknown option: {arg}")),
             _ if path.is_none() => path = Some(PathBuf::from(arg)),
@@ -51,11 +59,20 @@ fn parse_args() -> Result<Options, String> {
         }
     }
 
-    Ok(Options {
+    Ok(Some(Options {
         path: path.unwrap_or_else(|| PathBuf::from(".")),
         show_files,
         ascii,
-    })
+    }))
+}
+
+fn print_about() {
+    println!("treex {VERSION}");
+    println!("A small Rust implementation of a Windows tree.exe-like directory tree viewer.");
+    println!();
+    println!("Written in Rust.");
+    println!("License: MIT");
+    println!("Source: https://github.com/dummyvoid/treex");
 }
 
 fn run(options: &Options) -> io::Result<()> {
@@ -89,7 +106,11 @@ fn print_tree(path: &Path, prefix: &str, options: &Options) -> io::Result<()> {
         println!("{prefix}{branch}{}", entry.file_name().to_string_lossy());
 
         if entry.path().is_dir() {
-            print_tree(&entry.path(), &format!("{prefix}{next_prefix}"), options)?;
+            print_tree(
+                &entry.path(),
+                &format!("{prefix}{next_prefix}"),
+                options,
+            )?;
         }
     }
 
