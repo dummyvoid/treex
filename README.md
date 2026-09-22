@@ -37,5 +37,3 @@ With `/A`, the same output uses ASCII characters:
     |   \-- sample.txt
     |-- Cargo.toml
     \-- README.md
-
-The Windows executable is built automatically by GitHub Actions and uploaded as the `treex-windows-x64` artifact.
