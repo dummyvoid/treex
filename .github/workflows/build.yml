@@ -32,9 +32,7 @@ jobs:
           path: target/x86_64-pc-windows-msvc/release/treex.exe
           if-no-files-found: error
 
-      - name: Create GitHub Release
+      - name: Attach treex.exe to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: treex ${{ github.ref_name }}
-          generate_release_notes: true
           files: target/x86_64-pc-windows-msvc/release/treex.exe
