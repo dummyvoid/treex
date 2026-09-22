@@ -13,7 +13,7 @@ A small Rust implementation of a Windows tree.exe-like directory tree viewer.
 Examples:
 
     treex
-    treex C:\Users\dummyvoid /F
+    treex C:\Projects\treex /F
     treex . /F /A
 
 ## Output example
