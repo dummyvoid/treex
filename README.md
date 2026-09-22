@@ -8,7 +8,6 @@ A small Rust implementation of a Windows tree.exe-like directory tree viewer.
 
 - /F displays files as well as directories.
 - /A uses ASCII characters instead of Unicode line-drawing characters.
-- /ABOUT displays program information.
 - Without a path, the current directory is used.
 
 Examples:
@@ -16,7 +15,6 @@ Examples:
     treex
     treex C:\Users\dummyvoid /F
     treex . /F /A
-    treex /ABOUT
 
 ## Output example
 
@@ -39,15 +37,5 @@ With `/A`, the same output uses ASCII characters:
     |   \-- sample.txt
     |-- Cargo.toml
     \-- README.md
-
-### About
-
-    $ treex /ABOUT
-    treex 0.1.0
-    A small Rust implementation of a Windows tree.exe-like directory tree viewer.
-
-    Written in Rust.
-    License: MIT
-    Source: https://github.com/dummyvoid/treex
 
 The Windows executable is built automatically by GitHub Actions and uploaded as the `treex-windows-x64` artifact.
