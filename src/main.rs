@@ -81,7 +81,10 @@ fn print_tree(
     let mut entries: Vec<_> = fs::read_dir(path)?
         .filter_map(Result::ok)
         .filter_map(|entry| {
-            let is_dir = entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false);
+            let file_type = entry.file_type().ok();
+            let is_dir = file_type.as_ref().is_some_and(|kind| kind.is_dir())
+                || (file_type.as_ref().is_some_and(|kind| kind.is_symlink())
+                    && entry.path().is_dir());
             (options.show_files || is_dir).then_some((entry, is_dir))
         })
         .collect();
