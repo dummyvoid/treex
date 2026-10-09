@@ -1,7 +1,7 @@
 use std::{
     env,
     fs,
-    io,
+    io::{self, BufWriter, Write},
     path::{Path, PathBuf},
 };
 
@@ -24,7 +24,9 @@ fn main() {
         }
     };
 
-    if let Err(error) = run(&options) {
+    let stdout = io::stdout();
+    let mut out = BufWriter::new(stdout.lock());
+    if let Err(error) = run(&options, &mut out).and_then(|()| out.flush()) {
         eprintln!("treex: {error}");
         std::process::exit(1);
     }
@@ -58,7 +60,7 @@ fn parse_args() -> Result<Options, String> {
     })
 }
 
-fn run(options: &Options) -> io::Result<()> {
+fn run(options: &Options, out: &mut impl Write) -> io::Result<()> {
     let root = fs::canonicalize(&options.path)?;
     let name = root
         .file_name()
@@ -66,19 +68,27 @@ fn run(options: &Options) -> io::Result<()> {
         .filter(|n| !n.is_empty())
         .unwrap_or_else(|| root.to_str().unwrap_or("."));
 
-    println!("{name}");
-    print_tree(&root, "", options)
+    writeln!(out, "{name}")?;
+    print_tree(&root, &mut String::new(), options, out)
 }
 
-fn print_tree(path: &Path, prefix: &str, options: &Options) -> io::Result<()> {
+fn print_tree(
+    path: &Path,
+    prefix: &mut String,
+    options: &Options,
+    out: &mut impl Write,
+) -> io::Result<()> {
     let mut entries: Vec<_> = fs::read_dir(path)?
         .filter_map(Result::ok)
-        .filter(|entry| options.show_files || entry.path().is_dir())
+        .filter_map(|entry| {
+            let is_dir = entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false);
+            (options.show_files || is_dir).then_some((entry, is_dir))
+        })
         .collect();
 
-    entries.sort_by_key(|entry| entry.file_name().to_ascii_lowercase());
+    entries.sort_by_cached_key(|(entry, _)| entry.file_name().to_ascii_lowercase());
 
-    for (index, entry) in entries.iter().enumerate() {
+    for (index, (entry, is_dir)) in entries.iter().enumerate() {
         let last = index + 1 == entries.len();
         let (branch, next_prefix) = if options.ascii {
             (if last { "\\-- " } else { "|-- " }, if last { "    " } else { "|   " })
@@ -86,14 +96,14 @@ fn print_tree(path: &Path, prefix: &str, options: &Options) -> io::Result<()> {
             (if last { "└── " } else { "├── " }, if last { "    " } else { "│   " })
         };
 
-        println!("{prefix}{branch}{}", entry.file_name().to_string_lossy());
+        writeln!(out, "{prefix}{branch}{}", entry.file_name().to_string_lossy())?;
 
-        if entry.path().is_dir() {
-            print_tree(
-                &entry.path(),
-                &format!("{prefix}{next_prefix}"),
-                options,
-            )?;
+        if *is_dir {
+            let child_path = entry.path();
+            prefix.push_str(next_prefix);
+            let result = print_tree(&child_path, prefix, options, out);
+            prefix.truncate(prefix.len() - next_prefix.len());
+            result?;
         }
     }
 
