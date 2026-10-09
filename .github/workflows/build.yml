@@ -2,6 +2,8 @@ name: Build Windows EXE
 
 on:
   push:
+    branches:
+      - "v0.1.1"
     tags:
       - "v*"
   workflow_dispatch:
@@ -35,4 +37,6 @@ jobs:
       - name: Attach treex.exe to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v0.1.1
+          target_commitish: v0.1.1
           files: target/x86_64-pc-windows-msvc/release/treex.exe
